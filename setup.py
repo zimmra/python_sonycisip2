@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 # Package metadata
 setup(
     name='python_sonycisip2',
-    version='0.1.0',
+    version='0.1.1',
     description='A Python package for Sony CISIP 2',
     author='Zimmra',
     author_email='payton@zimmerer.io',
