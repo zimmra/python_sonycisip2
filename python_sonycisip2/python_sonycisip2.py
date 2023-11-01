@@ -14,6 +14,8 @@ GET = "get"
 NOTIFY = "notify"
 
 class SonyCISIP2:
+    _semaphore = Semaphore(2)
+
     def __init__(self, host, port=33336, loop=None):
         """
         Initialize the SonyCISIP2 class with the IP address and port of the Sony receiver.
@@ -35,9 +37,9 @@ class SonyCISIP2:
             return False
         return True
 
-    async def send_message(self, message_type, feature, value=None):
+    def send_message(self, message_type, feature, value=None):
         """
-        Asynchronously send a message to the Sony receiver.
+        Send a message to the Sony receiver.
         Constructs a JSON message based on the type, feature, and value provided.
         """
         message = {
@@ -53,9 +55,9 @@ class SonyCISIP2:
         except Exception as e:
             self.logger.error(f"Failed to send message: {e}")
 
-    async def receive_message(self):
+    def receive_message(self):
         """
-        Asynchronously receive a message from the Sony receiver.
+        Receive a message from the Sony receiver.
         Returns the message as a JSON object.
         """
         try:
@@ -71,27 +73,30 @@ class SonyCISIP2:
         Constructs a JSON message based on the type, feature, and value provided.
         Returns the received response.
         """
-        await self.send_message(message_type, feature, value)
-        return await self.receive_message()
+        async with self._semaphore:
+            await self.send_message(message_type, feature, value)
+            return await self.receive_message()
 
     async def set_feature(self, feature, value):
         """
         Asynchronously send a 'set' command to the Sony receiver to set a feature to a specific value.
         Returns the result as 'ACK', 'NAK', or 'ERR'.
         """
-        await self.send_message(SET, feature, value)
-        response = await self.receive_message()
-        result_value = response.get("value", "Unknown Response") if response else "Unknown Response"
-        return result_value
+        async with self._semaphore:
+            await self.send_message(SET, feature, value)
+            response = await self.receive_message()
+            result_value = response.get("value", "Unknown Response") if response else "Unknown Response"
+            return result_value
 
     async def get_feature(self, feature):
         """
         Asynchronously send a 'get' command to the Sony receiver to get the value of a feature.
         Returns the value of the feature.
         """
-        await self.send_message(GET, feature)
-        response = await self.receive_message()
-        return response.get("value", "Unknown Value") if response else "Unknown Value"
+        async with self._semaphore:
+            await self.send_message(GET, feature)
+            response = await self.receive_message()
+            return response.get("value", "Unknown Value") if response else "Unknown Value"
 
     async def listen_for_notifications(self, callback=None):
         """
