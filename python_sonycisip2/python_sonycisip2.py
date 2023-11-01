@@ -110,7 +110,7 @@ class SonyCISIP2:
                     callback(message)
             await asyncio.sleep(0.1)  # To prevent high CPU usage
 
-# Additional utility function remains the same
+# Additional utility function remains the same (future use)
 def replace_command_placeholders(command_str, variables_dict):
     """
     Replaces placeholders in the command string with actual values from the variables dictionary.
