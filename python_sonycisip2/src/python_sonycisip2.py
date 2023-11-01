@@ -37,7 +37,7 @@ class SonyCISIP2:
             return False
         return True
 
-    def send_message(self, message_type, feature, value=None):
+    async def send_message(self, message_type, feature, value=None):
         """
         Send a message to the Sony receiver.
         Constructs a JSON message based on the type, feature, and value provided.
@@ -55,7 +55,7 @@ class SonyCISIP2:
         except Exception as e:
             self.logger.error(f"Failed to send message: {e}")
 
-    def receive_message(self):
+    async def receive_message(self):
         """
         Receive a message from the Sony receiver.
         Returns the message as a JSON object.
