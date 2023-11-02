@@ -75,7 +75,7 @@ class SonyCISIP2:
                 if data:
                     message = json.loads(data.decode('utf-8'))
                     if message["type"] == NOTIFY:
-                        self.handle_notification(message)  # Handle notifications directly
+                        await self.handle_notification(message)  # Await the handle_notification method
                     elif message["type"] == RESULT:
                         await self.response_queue.put(message)  # Enqueue responses
         except asyncio.CancelledError:
