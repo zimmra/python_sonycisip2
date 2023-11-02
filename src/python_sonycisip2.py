@@ -7,11 +7,13 @@ import socket
 import json
 import asyncio
 import logging
+from asyncio import Semaphore, Queue
 
 # Defining constants for message types
 SET = "set"
 GET = "get"
 NOTIFY = "notify"
+RESULT = "result"
 
 class SonyCISIP2:
     _semaphore = Semaphore(2)
@@ -25,13 +27,17 @@ class SonyCISIP2:
         self.loop = loop if loop else asyncio.get_event_loop()
         self.socket = None
         self.logger = logging.getLogger(__name__)
+        self.response_queue = Queue()
 
     async def connect(self):
         """
         Asynchronously establish a TCP socket connection to the Sony receiver.
         """
         try:
-            self.socket = await self.loop.sock_connect(socket.AF_INET, socket.SOCK_STREAM, (self.host, self.port))
+            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+            # Start listening for incoming messages in the background
+            asyncio.create_task(self.listen_for_incoming_messages())
+            print("Started listening for incoming messages.")
         except Exception as e:
             self.logger.error(f"Failed to connect: {e}")
             return False
@@ -51,21 +57,41 @@ class SonyCISIP2:
 
         json_message = json.dumps(message)
         try:
-            await self.loop.sock_sendall(self.socket, json_message.encode('utf-8'))
+            self.writer.write(json_message.encode('utf-8'))
+            await self.writer.drain()  # Ensure the message is sent
         except Exception as e:
             self.logger.error(f"Failed to send message: {e}")
 
+    async def listen_for_incoming_messages(self):
+        """
+        Continuously listen for incoming messages from the Sony receiver.
+        """
+        print("Listening for incoming messages...")
+        try:
+            while True:
+                data = await self.reader.read(1024)
+                if data:
+                    message = json.loads(data.decode('utf-8'))
+                    if message["type"] == NOTIFY:
+                        self.handle_notification(message)  # Handle notifications directly
+                    elif message["type"] == RESULT:
+                        await self.response_queue.put(message)  # Enqueue responses
+        except asyncio.CancelledError:
+            # Handle cancellation of the task
+            pass
+        except Exception as e:
+            print(f"Error in incoming message listener: {e}")
+
     async def receive_message(self):
         """
-        Receive a message from the Sony receiver.
-        Returns the message as a JSON object.
+        Receive a message from the queue
         """
         try:
-            data = await self.loop.sock_recv(self.socket, 1024)
+            message = await self.response_queue.get()
+            return message
         except Exception as e:
             self.logger.error(f"Failed to receive message: {e}")
             return None
-        return json.loads(data.decode('utf-8'))
 
     async def send_and_receive_message(self, message_type, feature, value=None):
         """
@@ -98,17 +124,12 @@ class SonyCISIP2:
             response = await self.receive_message()
             return response.get("value", "Unknown Value") if response else "Unknown Value"
 
-    async def listen_for_notifications(self, callback=None):
+
+    def handle_notification(self, message):
         """
-        Asynchronously listen for 'notify' messages from the Sony receiver.
-        If a callback function is provided, it will be invoked with the notification message.
+        Handle received notification messages.
         """
-        while True:
-            message = await self.receive_message()
-            if message and message["type"] == NOTIFY:
-                if callback:
-                    callback(message)
-            await asyncio.sleep(0.1)  # To prevent high CPU usage
+        print(f"NOTIFICATION: {message}")
 
 # Additional utility function remains the same (future use)
 def replace_command_placeholders(command_str, variables_dict):
