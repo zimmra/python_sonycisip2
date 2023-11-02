@@ -18,7 +18,7 @@ URL = 'https://github.com/zimmra/python_sonycisip2'
 EMAIL = 'payton@zimmerer.io'
 AUTHOR = 'Zimmra'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.1.5'
+VERSION = '0.2.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [

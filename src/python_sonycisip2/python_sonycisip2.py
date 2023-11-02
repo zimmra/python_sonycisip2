@@ -1,6 +1,6 @@
 
-from commandset import commands_dict
-from variables import variables_dict
+from .commandset import commands_dict
+from .variables import variables_dict
 
 # Importing required modules
 import socket
