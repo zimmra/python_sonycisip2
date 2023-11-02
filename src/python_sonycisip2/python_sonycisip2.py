@@ -133,14 +133,14 @@ class SonyCISIP2:
         """
         self.notification_callback = callback
 
-    def handle_notification(self, message):
+    async def handle_notification(self, message):
         """
         Handle received notification messages.
         Call the registered notification callback function.
         """
         print(f"NOTIFICATION: {message}")
         if self.notification_callback:
-            self.notification_callback(message)
+            await self.notification_callback(message)
 
 # Additional utility function remains the same (future use)
 def replace_command_placeholders(command_str, variables_dict):
