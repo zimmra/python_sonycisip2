@@ -28,6 +28,8 @@ class SonyCISIP2:
         self.socket = None
         self.logger = logging.getLogger(__name__)
         self.response_queue = Queue()
+        self.notification_callback = None 
+
 
     async def connect(self):
         """
@@ -125,11 +127,20 @@ class SonyCISIP2:
             return response.get("value", "Unknown Value") if response else "Unknown Value"
 
 
+    def register_notification_callback(self, callback):
+        """
+        Register a callback function to be called when a notification is received.
+        """
+        self.notification_callback = callback
+
     def handle_notification(self, message):
         """
         Handle received notification messages.
+        Call the registered notification callback function.
         """
         print(f"NOTIFICATION: {message}")
+        if self.notification_callback:
+            self.notification_callback(message)
 
 # Additional utility function remains the same (future use)
 def replace_command_placeholders(command_str, variables_dict):
