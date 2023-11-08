@@ -28,8 +28,7 @@ class SonyCISIP2:
         self.socket = None
         self.logger = logging.getLogger(__name__)
         self.response_queue = Queue()
-        self.notification_callback = None 
-
+        self.notification_callbacks = []  # Changed to a list for multiple callbacks
 
     async def connect(self):
         """
@@ -75,7 +74,7 @@ class SonyCISIP2:
                 if data:
                     message = json.loads(data.decode('utf-8'))
                     if message["type"] == NOTIFY:
-                        await self.handle_notification(message)  # Await the handle_notification method
+                        await self.handle_notification(message)  # Handle notifications directly
                     elif message["type"] == RESULT:
                         await self.response_queue.put(message)  # Enqueue responses
         except asyncio.CancelledError:
@@ -126,21 +125,21 @@ class SonyCISIP2:
             response = await self.receive_message()
             return response.get("value", "Unknown Value") if response else "Unknown Value"
 
-
     def register_notification_callback(self, callback):
         """
         Register a callback function to be called when a notification is received.
         """
-        self.notification_callback = callback
+        if callback not in self.notification_callbacks:
+            self.notification_callbacks.append(callback)
 
     async def handle_notification(self, message):
         """
         Handle received notification messages.
-        Call the registered notification callback function.
+        Call all registered notification callback functions.
         """
         print(f"NOTIFICATION: {message}")
-        if self.notification_callback:
-            await self.notification_callback(message)
+        for callback in self.notification_callbacks:
+            await callback(message)
 
 # Additional utility function remains the same (future use)
 def replace_command_placeholders(command_str, variables_dict):
