@@ -43,6 +43,22 @@ class SonyCISIP2:
             self.logger.error(f"Failed to connect: {e}")
             return False
         return True
+    
+    async def is_connected(self):
+        """
+        Check if the connection to the Sony receiver is still active.
+        Returns True if connected, False otherwise.
+        """
+        if not self.writer or not self.reader:
+            return False
+        try:
+            # Attempt a simple command to check the connection
+            await self.get_feature("main.power")
+            response = await self.receive_message()
+            return response is not None
+        except Exception as e:
+            self.logger.error(f"Connection check failed: {e}")
+            return False    
 
     async def send_message(self, message_type, feature, value=None):
         """
